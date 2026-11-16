@@ -5,6 +5,11 @@
   "description": "PWR-9 — an interactive pressurized water reactor control-room simulator.",
   "author": "Venkatesh",
   "license": "MIT",
+  "homepage": "https://github.com/venkatesh09101994/nuclear-reactor-simulator",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/venkatesh09101994/nuclear-reactor-simulator.git"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
