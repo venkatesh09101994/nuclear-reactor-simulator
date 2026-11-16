@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PWR-9 · Nuclear Reactor Simulator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- ── Title bar ─────────────────────────────────────────────── -->
+    <header class="titlebar">
+      <div class="titlebar-drag">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"></circle>
+            <path d="M12 9.8V3.4M9.9 13.3l-5.5 3.2M14.1 13.3l5.5 3.2" stroke-linecap="round"></path>
+          </svg>
+        </span>
+        <span class="brand-text">PWR<span class="brand-dash">-</span>9 <em>CONTROL ROOM</em></span>
+        <span class="titlebar-badge">SIM v2.0</span>
+      </div>
+      <div class="window-controls" id="window-controls">
+        <button class="win-btn" id="win-min" title="Minimize" aria-label="Minimize window">
+          <svg viewBox="0 0 12 12"><path d="M2 6h8" stroke="currentColor" stroke-width="1.4"></path></svg>
+        </button>
+        <button class="win-btn" id="win-max" title="Maximize" aria-label="Maximize window">
+          <svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"></rect></svg>
+        </button>
+        <button class="win-btn win-close" id="win-close" title="Close" aria-label="Close window">
+          <svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.4"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── HUD ───────────────────────────────────────────────────── -->
+    <div class="hud">
+      <div class="hud-left">
+        <div class="status-pill" id="status-pill" data-state="nominal">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-text">NOMINAL</span>
+        </div>
+        <div class="hud-chip"><label>Day</label><strong id="day-val">1</strong></div>
+        <div class="hud-chip"><label>Shift clock</label><strong id="clock-val">06:00</strong></div>
+        <div class="hud-chip"><label>Score</label><strong id="score-val" class="violet">0</strong></div>
+        <div class="hud-chip"><label>Streak</label><strong id="streak-val">0</strong></div>
+      </div>
+      <div class="hud-actions">
+        <button id="autopilot-btn" class="btn btn-ghost" aria-pressed="false">
+          <span class="led" aria-hidden="true"></span> CO-PILOT
+        </button>
+        <button id="sound-btn" class="btn btn-icon" title="Toggle sound (M)" aria-label="Toggle sound" aria-pressed="true">
+          <svg class="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 9v6h3.5L12 19V5L7.5 9H4z" stroke-linejoin="round"></path>
+            <path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" stroke-linecap="round"></path>
+          </svg>
+          <svg class="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 9v6h3.5L12 19V5L7.5 9H4z" stroke-linejoin="round"></path>
+            <path d="M16 9l5 6M21 9l-5 6" stroke-linecap="round"></path>
+          </svg>
+        </button>
+        <button id="help-btn" class="btn btn-icon" title="Help &amp; shortcuts (H)" aria-label="Help and keyboard shortcuts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.6 9.2a2.5 2.5 0 114.1 2c-.9.7-1.7 1.2-1.7 2.4" stroke-linecap="round"></path>
+            <circle cx="12" cy="17.2" r="1" fill="currentColor" stroke="none"></circle>
+          </svg>
+        </button>
+        <button id="scram-btn" class="btn btn-danger" title="Emergency shutdown (S)">SCRAM</button>
+      </div>
+    </div>
+
+    <!-- ── Scenario bar ──────────────────────────────────────────── -->
+    <nav class="scenario-bar" aria-label="Drills and scenarios">
+      <span class="bar-label">Drills</span>
+      <div class="segmented" id="scenario-group">
+        <button class="seg-btn is-active" data-scenario="normal">Standard</button>
+        <button class="seg-btn" data-scenario="load">Load Following</button>
+        <button class="seg-btn" data-scenario="blackout">Blackout</button>
+        <button class="seg-btn" data-scenario="xenon">Xenon Pit</button>
+        <button class="seg-btn" data-scenario="cooldown">Cooldown</button>
+        <button class="seg-btn" data-scenario="sandbox">Sandbox</button>
+      </div>
+      <div class="bar-right">
+        <button id="pause-btn" class="btn btn-ghost btn-sm" title="Pause simulation (Space)" aria-pressed="false">
+          <svg class="ico-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+          <svg class="ico-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5l12 7.5-12 7.5z"></path></svg>
+          <span id="pause-label">PAUSE</span>
+        </button>
+        <div class="speed-group" id="speed-group" role="group" aria-label="Simulation speed">
+          <button class="speed-btn is-active" data-speed="1">1×</button>
+          <button class="speed-btn" data-speed="2">2×</button>
+          <button class="speed-btn" data-speed="4">4×</button>
+        </div>
+        <span class="bar-divider" aria-hidden="true"></span>
+        <button id="save-btn" class="btn btn-ghost btn-sm" title="Save game">SAVE</button>
+        <button id="load-btn" class="btn btn-ghost btn-sm" title="Load game">LOAD</button>
+        <button id="new-btn" class="btn btn-ghost btn-sm" title="New game">NEW</button>
+      </div>
+    </nav>
+
+    <!-- ── Annunciator ───────────────────────────────────────────── -->
+    <section class="annunciator" id="annunciator" aria-label="Alarm annunciator">
+      <button class="alarm" data-alarm="temp"><span class="alarm-led"></span><span>CORE TEMP</span></button>
+      <button class="alarm" data-alarm="press"><span class="alarm-led"></span><span>PRESSURIZER</span></button>
+      <button class="alarm" data-alarm="sg"><span class="alarm-led"></span><span>SG LEVEL</span></button>
+      <button class="alarm" data-alarm="pump"><span class="alarm-led"></span><span>PRIMARY PUMP</span></button>
+      <button class="alarm" data-alarm="xenon"><span class="alarm-led"></span><span>XENON</span></button>
+      <button class="alarm" data-alarm="grid"><span class="alarm-led"></span><span>GRID MISMATCH</span></button>
+      <button class="alarm" data-alarm="trip"><span class="alarm-led"></span><span>PLANT TRIP</span></button>
+    </section>
+
+    <!-- ── Workspace ─────────────────────────────────────────────── -->
+    <main class="workspace">
+      <!-- Telemetry -->
+      <section class="col col-left">
+        <div class="panel telemetry-panel">
+          <div class="panel-head">
+            <h2>Plant Telemetry</h2>
+            <span class="panel-tag live">LIVE</span>
+          </div>
+
+          <div class="gauge-grid">
+            <div class="gauge" id="g-temp" data-tone="cyan">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="gauge-track" cx="50" cy="50" r="42"></circle>
+                <circle class="gauge-arc" cx="50" cy="50" r="42"></circle>
+              </svg>
+              <div class="gauge-center"><strong id="temp-val">300</strong><span>°C</span></div>
+              <div class="gauge-label">CORE TEMP</div>
+            </div>
+            <div class="gauge" id="g-press" data-tone="violet">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="gauge-track" cx="50" cy="50" r="42"></circle>
+                <circle class="gauge-arc" cx="50" cy="50" r="42"></circle>
+              </svg>
+              <div class="gauge-center"><strong id="press-val">155</strong><span>bar</span></div>
+              <div class="gauge-label">PRESSURE</div>
+            </div>
+            <div class="gauge" id="g-sg" data-tone="green">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="gauge-track" cx="50" cy="50" r="42"></circle>
+                <circle class="gauge-arc" cx="50" cy="50" r="42"></circle>
+              </svg>
+              <div class="gauge-center"><strong id="sg-val">62</strong><span>%</span></div>
+              <div class="gauge-label">SG LEVEL</div>
+            </div>
+          </div>
+
+          <div class="meter-list">
+            <div class="meter">
+              <div class="meter-head"><label>Grid demand</label><strong id="demand-val">1000 MW</strong></div>
+              <div class="meter-track"><div class="meter-fill demand" id="demand-bar"></div></div>
+            </div>
+            <div class="meter">
+              <div class="meter-head"><label>Generator output</label><strong id="output-val" class="cyan">0 MW</strong></div>
+              <div class="meter-track"><div class="meter-fill output" id="output-bar"></div></div>
+            </div>
+            <div class="meter">
+              <div class="meter-head"><label>Thermal power</label><strong id="thermal-val">0 MWt</strong></div>
+              <div class="meter-track"><div class="meter-fill thermal" id="thermal-bar"></div></div>
+            </div>
+            <div class="meter">
+              <div class="meter-head"><label>Boron shim</label><strong id="boron-val">420 ppm</strong></div>
+              <div class="meter-track"><div class="meter-fill boron" id="boron-bar"></div></div>
+            </div>
+            <div class="meter">
+              <div class="meter-head"><label>Xenon poison</label><strong id="xenon-val">28%</strong></div>
+              <div class="meter-track"><div class="meter-fill xenon" id="xenon-bar"></div></div>
+            </div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat"><label>Energy</label><strong id="stat-energy">0.0 MWh</strong></div>
+            <div class="stat"><label>Uptime</label><strong id="stat-uptime">00:00</strong></div>
+            <div class="stat"><label>Trips</label><strong id="stat-trips">0</strong></div>
+            <div class="stat"><label>Best streak</label><strong id="stat-best">0</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center: schematic + chart + log -->
+      <section class="col col-center">
+        <div class="panel schematic-panel">
+          <div class="panel-head">
+            <h2>Plant Schematic</h2>
+            <span class="panel-tag" id="schematic-tag">INTERACTIVE · CLICK COMPONENTS</span>
+          </div>
+          <div class="schematic-wrap">
+            <canvas id="schematic-canvas" aria-label="Interactive plant schematic"></canvas>
+          </div>
+          <div class="legend">
+            <span class="lg hot">HOT LEG</span>
+            <span class="lg cold">COLD LEG</span>
+            <span class="lg steam">STEAM</span>
+            <span class="lg feed">FEEDWATER</span>
+            <span class="lg live-flow">FLOW</span>
+          </div>
+        </div>
+
+        <div class="center-bottom">
+          <div class="panel chart-panel">
+            <div class="panel-head">
+              <h2>Grid Tracking</h2>
+              <div class="legend inline">
+                <span class="lg demand">DEMAND</span>
+                <span class="lg output">OUTPUT</span>
+                <span class="lg temp">TEMP</span>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="chart-canvas" aria-label="Demand and output history chart"></canvas></div>
+          </div>
+
+          <div class="panel log-panel">
+            <div class="panel-head">
+              <h2>Event Log</h2>
+              <button id="log-clear" class="link-btn">CLEAR</button>
+            </div>
+            <div class="log-list" id="log-list" role="log" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: mission + controls -->
+      <section class="col col-right">
+        <div class="panel mission-panel">
+          <div class="panel-head">
+            <h2>Active Drill</h2>
+            <span class="panel-tag" id="mission-tag">TRAINING</span>
+          </div>
+          <div class="mission-top">
+            <div class="mission-title">
+              <h3 id="mission-name">Standard Operation</h3>
+              <p id="mission-desc">Steady-state power operation.</p>
+            </div>
+            <div class="mission-clock">
+              <span id="mission-timer">12:00</span>
+              <small>SHIFT LEFT</small>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="mission-progress-bar"></div></div>
+          <div class="mission-objective">
+            <span>OBJECTIVE</span>
+            <p id="mission-objective">Hold generation within ±120 MW of demand.</p>
+          </div>
+          <div class="mission-actions">
+            <button class="btn btn-ghost btn-sm" id="mission-brief-btn">BRIEFING</button>
+            <button class="btn btn-ghost btn-sm" id="mission-restart-btn">RESTART DRILL</button>
+          </div>
+        </div>
+
+        <div class="panel controls-panel">
+          <div class="panel-head">
+            <h2>Reactor Controls</h2>
+            <span class="panel-tag" id="control-tag">MANUAL</span>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="rod-slider">Control rods</label>
+              <span class="control-value" id="rod-val">12%</span>
+            </div>
+            <input type="range" id="rod-slider" min="0" max="100" step="1" value="12" style="--accent: var(--cyan)">
+            <div class="control-foot"><span>Withdrawn</span><span>Inserted</span></div>
+            <div class="quick-row">
+              <button class="btn btn-ghost btn-xs" id="rod-dec">−5</button>
+              <button class="btn btn-ghost btn-xs" id="rod-inc">+5</button>
+              <button class="btn btn-ghost btn-xs" id="rod-all-out">ALL OUT</button>
+              <button class="btn btn-ghost btn-xs" id="rod-all-in">ALL IN</button>
+            </div>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="valve-slider">Turbine steam valve</label>
+              <span class="control-value" id="valve-val">66%</span>
+            </div>
+            <input type="range" id="valve-slider" min="0" max="100" step="1" value="66" style="--accent: var(--amber)">
+            <div class="control-foot"><span>Closed</span><span>Open</span></div>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="feedwater-slider">Feedwater pump</label>
+              <span class="control-value" id="fw-val">46%</span>
+            </div>
+            <input type="range" id="feedwater-slider" min="0" max="100" step="1" value="46" style="--accent: var(--green)">
+            <div class="control-foot"><span>Idle</span><span>Full</span></div>
+          </div>
+
+          <div class="toggle-grid">
+            <button id="pump-btn" class="toggle" aria-pressed="true">
+              <span class="led"></span><span class="toggle-label">PRIMARY PUMP</span><span class="toggle-state">ON</span>
+            </button>
+            <button id="breaker-btn" class="toggle" aria-pressed="true">
+              <span class="led"></span><span class="toggle-label">GRID BREAKER</span><span class="toggle-state">CLOSED</span>
+            </button>
+            <button id="heater-btn" class="toggle" aria-pressed="false">
+              <span class="led"></span><span class="toggle-label">PZR HEATER</span><span class="toggle-state">OFF</span>
+            </button>
+            <button id="spray-btn" class="toggle" aria-pressed="false">
+              <span class="led"></span><span class="toggle-label">PZR SPRAY</span><span class="toggle-state">OFF</span>
+            </button>
+          </div>
+
+          <div class="control boron-control">
+            <div class="control-head">
+              <label for="boron-slider">Chemical shim · boron</label>
+              <span class="control-value" id="boron-ctl-val">420 ppm</span>
+            </div>
+            <input type="range" id="boron-slider" min="0" max="2500" step="10" value="420" style="--accent: var(--violet)">
+            <div class="btn-group">
+              <button class="btn btn-ghost btn-sm" id="boron-sub">−100 ppm</button>
+              <button class="btn btn-ghost btn-sm" id="boron-add">+100 ppm</button>
+            </div>
+          </div>
+
+          <button id="trip-reset-btn" class="btn btn-success full" disabled>RESET TRIP</button>
+          <p class="trip-note" id="trip-note">Trip reset unlocks below 250 °C and 165 bar.</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── Status bar ────────────────────────────────────────────── -->
+    <footer class="statusbar">
+      <span id="hint">Hover the schematic for component telemetry. Press H for help.</span>
+      <span class="spacer"></span>
+      <span class="status-item"><span class="status-key">SIM</span><span id="sim-state">RUNNING</span></span>
+      <span class="status-item"><span class="status-key">SPEED</span><span id="speed-val">1×</span></span>
+      <span class="status-item"><span class="status-key">FPS</span><span id="fps-val">60</span></span>
+      <span class="status-item"><span class="status-key">BUILD</span><span id="app-version">2.0.0</span></span>
+    </footer>
+  </div>
+
+  <div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+  <div id="modal-root" class="modal-root hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-card" role="document">
+      <div class="modal-head">
+        <div>
+          <h2 id="modal-title">Modal</h2>
+          <p id="modal-subtitle"></p>
+        </div>
+        <button class="btn btn-icon" id="modal-close" aria-label="Close dialog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"></path></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-actions" id="modal-actions"></div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "name": "nuclear-reactor-sim",
+  "productName": "Nuclear Reactor Simulator",
+  "version": "2.0.0",
+  "description": "PWR-9 — an interactive pressurized water reactor control-room simulator.",
+  "author": "Venkatesh",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "verify": "electron tools/verify.js",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^44.3.0",
+    "electron-builder": "^25.1.0"
+  },
+  "build": {
+    "appId": "com.reactor.simulator",
+    "productName": "Nuclear Reactor Simulator",
+    "copyright": "Copyright © 2026",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "renderer.js",
+      "icon.ico",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "portable": {
+      "artifactName": "NuclearReactorSimulator.exe"
+    },
+    "compression": "maximum"
+  }
+}
